@@ -1,0 +1,59 @@
+# OS Files
+.DS_Store
+Thumbs.db
+*.db
+*.sqlite3
+
+# IDE / Editor Files
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+
+# Python (Backend)
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+env/
+.pytest_cache/
+.coverage
+htmlcov/
+.env
+.env.*
+!.env.example
+
+# Flutter / Dart (Frontend)
+**/build/
+**/.dart_tool/
+**/.pub-cache/
+**/.pub/
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+**/ios/Flutter/.last_build_id
+/android/app/debug
+/android/app/profile
+/android/app/release
+app.*.symbols
+app.*.map.json
+**/doc/api/
+/coverage/
+
+# Node / JavaScript (Generic Web)
+node_modules/
+.next/
+dist/
+out/
+.npm
+.yarn
+.parcel-cache
+.eslintcache
+*.md
