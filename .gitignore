@@ -15,7 +15,7 @@ Thumbs.db
 *.njsproj
 *.sln
 *.swp
-
+.kilo
 # Python (Backend)
 __pycache__/
 *.py[cod]

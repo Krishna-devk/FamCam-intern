@@ -18,7 +18,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   String _email = '';
   String _password = '';
   bool _obscurePassword = true;
-  String _role = 'PATIENT'; // default to PATIENT for registration
+  final String _role = 'PATIENT'; // default to PATIENT for registration
   bool _isLoading = false;
 
   void _submit() async {
@@ -243,37 +243,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                             onSaved: (val) => _password = val ?? '',
                           ),
 
-                          if (!_isLogin) ...[
-                            const SizedBox(height: 18),
-                            Text(
-                              "Choose Your Role",
-                              style: Theme.of(context).textTheme.titleSmall,
-                            ),
-                            const SizedBox(height: 10),
-                            Row(
-                              children: [
-                                _RoleChip(
-                                  label: "Patient",
-                                  roleCode: "PATIENT",
-                                  isSelected: _role == "PATIENT",
-                                  icon: Icons.person_outline,
-                                  onSelected: (selected) {
-                                    if (selected) setState(() => _role = "PATIENT");
-                                  },
-                                ),
-                                const SizedBox(width: 12),
-                                _RoleChip(
-                                  label: "Caregiver",
-                                  roleCode: "CAREGIVER",
-                                  isSelected: _role == "CAREGIVER",
-                                  icon: Icons.medical_services_outlined,
-                                  onSelected: (selected) {
-                                    if (selected) setState(() => _role = "CAREGIVER");
-                                  },
-                                ),
-                              ],
-                            ),
-                          ],
+
 
                           const SizedBox(height: 28),
 
@@ -355,47 +325,3 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   }
 }
 
-class _RoleChip extends StatelessWidget {
-  final String label;
-  final String roleCode;
-  final bool isSelected;
-  final IconData icon;
-  final ValueChanged<bool> onSelected;
-
-  const _RoleChip({
-    required this.label,
-    required this.roleCode,
-    required this.isSelected,
-    required this.icon,
-    required this.onSelected,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final activeColor = roleCode == "PATIENT" ? AppTheme.colorPrimary : AppTheme.colorSuccess;
-
-    return ChoiceChip(
-      avatar: Icon(
-        icon,
-        size: 16,
-        color: isSelected ? Colors.white : AppTheme.colorTextMuted,
-      ),
-      label: Text(label),
-      selected: isSelected,
-      onSelected: onSelected,
-      selectedColor: activeColor,
-      backgroundColor: AppTheme.colorBg,
-      labelStyle: TextStyle(
-        color: isSelected ? Colors.white : AppTheme.colorTextPrimary,
-        fontWeight: FontWeight.w600,
-        fontSize: 13,
-      ),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(
-          color: isSelected ? activeColor : AppTheme.colorBorder,
-        ),
-      ),
-    );
-  }
-}

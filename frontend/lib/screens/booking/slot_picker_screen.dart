@@ -766,7 +766,7 @@ class _SlotPickerScreenState extends ConsumerState<SlotPickerScreen>
         'pendingServices': remaining,
       });
     } else {
-      context.go('/home');
+      context.go('/cart');
     }
   }
 
@@ -817,10 +817,15 @@ class _SlotPickerScreenState extends ConsumerState<SlotPickerScreen>
         'pendingServices': remaining,
       });
     } else {
-      if (context.canPop()) {
-        context.pop();
+      final cartItems = ref.read(cartProvider);
+      if (cartItems.isNotEmpty) {
+        context.go('/cart');
       } else {
-        context.go('/home');
+        if (context.canPop()) {
+          context.pop();
+        } else {
+          context.go('/home');
+        }
       }
     }
   }
