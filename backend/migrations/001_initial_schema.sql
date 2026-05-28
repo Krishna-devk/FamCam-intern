@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS services (
     description      TEXT,
     duration_minutes INT           NOT NULL CHECK (duration_minutes % 15 = 0),
     price_cents      INT           NOT NULL CHECK (price_cents > 0),
+    image_url        VARCHAR(255),
     created_at       TIMESTAMPTZ   DEFAULT NOW()
 );
 

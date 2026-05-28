@@ -6,14 +6,14 @@ from models.service import Service
 from models.caregiver_service import CaregiverService
 
 SERVICES = [
-    {"name": "Physiotherapy",     "duration_minutes": 60, "price_cents": 8000, "description": "Physical therapy service"},
-    {"name": "Wound Dressing",    "duration_minutes": 30, "price_cents": 4000, "description": "Dressing and cleaning of wounds"},
-    {"name": "Medication Review", "duration_minutes": 45, "price_cents": 5500, "description": "Reviewing medication schedule"},
-    {"name": "Elderly Companion Care", "duration_minutes": 90, "price_cents": 6000, "description": "Social and companion care for elders"},
-    {"name": "Occupational Therapy", "duration_minutes": 60, "price_cents": 8500, "description": "Daily activity coordination therapy"},
-    {"name": "Post-Surgical Nursing", "duration_minutes": 120, "price_cents": 12000, "description": "High-care post-surgical support"},
-    {"name": "Dietary & Nutrition Consult", "duration_minutes": 45, "price_cents": 5000, "description": "Personalized meal and diet plans"},
-    {"name": "Vital Signs Monitoring", "duration_minutes": 15, "price_cents": 2000, "description": "Regular blood pressure, sugar and pulse check"},
+    {"name": "Physiotherapy",     "duration_minutes": 60, "price_cents": 8000, "description": "Physical therapy service", "image_url": "https://images.unsplash.com/photo-1576091160550-2173dba999ef?auto=format&fit=crop&w=400&q=80"},
+    {"name": "Wound Dressing",    "duration_minutes": 30, "price_cents": 4000, "description": "Dressing and cleaning of wounds", "image_url": "https://images.unsplash.com/photo-1603398938378-e54eab446dde?auto=format&fit=crop&w=400&q=80"},
+    {"name": "Medication Review", "duration_minutes": 45, "price_cents": 5500, "description": "Reviewing medication schedule", "image_url": "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?auto=format&fit=crop&w=400&q=80"},
+    {"name": "Elderly Companion Care", "duration_minutes": 90, "price_cents": 6000, "description": "Social and companion care for elders", "image_url": "https://images.unsplash.com/photo-1576765608535-5f04d1e3f289?auto=format&fit=crop&w=400&q=80"},
+    {"name": "Occupational Therapy", "duration_minutes": 60, "price_cents": 8500, "description": "Daily activity coordination therapy", "image_url": "https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=400&q=80"},
+    {"name": "Post-Surgical Nursing", "duration_minutes": 120, "price_cents": 12000, "description": "High-care post-surgical support", "image_url": "https://images.unsplash.com/photo-1516549655169-df83a0774514?auto=format&fit=crop&w=400&q=80"},
+    {"name": "Dietary & Nutrition Consult", "duration_minutes": 45, "price_cents": 5000, "description": "Personalized meal and diet plans", "image_url": "https://images.unsplash.com/photo-1490645935967-10de6ba17061?auto=format&fit=crop&w=400&q=80"},
+    {"name": "Vital Signs Monitoring", "duration_minutes": 15, "price_cents": 2000, "description": "Regular blood pressure, sugar and pulse check", "image_url": "https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&w=400&q=80"},
 ]
 
 USERS = [
@@ -146,15 +146,17 @@ async def seed_db():
             print(f"Skipped database session termination query: {e}")
             
         # Drop stale tables from previous database states to avoid conflicts
-        await conn.execute(text("DROP TABLE IF EXISTS bookings CASCADE;"))
-        await conn.execute(text("DROP TABLE IF EXISTS caregiver_services CASCADE;"))
-        await conn.execute(text("DROP TABLE IF EXISTS users CASCADE;"))
-        await conn.execute(text("DROP TABLE IF EXISTS services CASCADE;"))
+        is_sqlite = "sqlite" in engine.dialect.name
+        cascade_suffix = "" if is_sqlite else " CASCADE"
+        await conn.execute(text(f"DROP TABLE IF EXISTS bookings{cascade_suffix};"))
+        await conn.execute(text(f"DROP TABLE IF EXISTS caregiver_services{cascade_suffix};"))
+        await conn.execute(text(f"DROP TABLE IF EXISTS users{cascade_suffix};"))
+        await conn.execute(text(f"DROP TABLE IF EXISTS services{cascade_suffix};"))
         print("Dropped stale database tables successfully.")
         
         # Read the raw DDL schema migration
         schema_path = os.path.join(os.path.dirname(__file__), "migrations", "001_initial_schema.sql")
-        if os.path.exists(schema_path):
+        if os.path.exists(schema_path) and not is_sqlite:
             with open(schema_path, "r", encoding="utf-8") as f:
                 ddl_sql = f.read()
             
@@ -169,7 +171,7 @@ async def seed_db():
             # Fallback to standard ORM create_all
             import models
             await conn.run_sync(Base.metadata.create_all)
-            print("Migration file not found. Fallback: standard Base metadata create_all initialized.")
+            print("Migration file not found or SQLite in use. Fallback: standard Base metadata create_all initialized.")
 
 
 

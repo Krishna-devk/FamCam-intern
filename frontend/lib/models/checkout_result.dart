@@ -30,6 +30,18 @@ class BookingDetail {
       priceCents: json['price_cents'] as int,
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'booking_id': bookingId,
+      'service_name': serviceName,
+      'caregiver_name': caregiverName,
+      'date': date.toIso8601String().substring(0, 10),
+      'start_time': startTime,
+      'end_time': endTime,
+      'price_cents': priceCents,
+    };
+  }
 }
 
 class CheckoutSuccess extends CheckoutResult {

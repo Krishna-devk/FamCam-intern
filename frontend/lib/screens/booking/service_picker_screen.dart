@@ -18,8 +18,7 @@ class ServicePickerScreen extends ConsumerStatefulWidget {
 }
 
 class _ServicePickerScreenState extends ConsumerState<ServicePickerScreen> {
-  int? _selectedServiceId;
-  Service? _selectedService;
+  final List<Service> _selectedServices = [];
   DateTime _selectedDate = DateTime.now().add(const Duration(days: 1));
 
   @override
@@ -28,7 +27,26 @@ class _ServicePickerScreenState extends ConsumerState<ServicePickerScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/home');
+            }
+          },
+        ),
         title: const Text("Book a Service"),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.close),
+            tooltip: "Cancel booking",
+            onPressed: () {
+              context.go('/home');
+            },
+          ),
+        ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
           child: Container(height: 1, color: AppTheme.colorBorder),
@@ -39,7 +57,7 @@ class _ServicePickerScreenState extends ConsumerState<ServicePickerScreen> {
         error: (err, stack) => _buildErrorState(),
         data: (servicesData) => _buildContent(servicesData.cast<Service>()),
       ),
-      bottomNavigationBar: _selectedServiceId != null
+      bottomNavigationBar: _selectedServices.isNotEmpty
           ? _buildBottomBar()
           : const AppBottomNav(currentIndex: 1),
     );
@@ -79,7 +97,7 @@ class _ServicePickerScreenState extends ConsumerState<ServicePickerScreen> {
             itemCount: services.length,
             itemBuilder: (context, index) {
               final service = services[index];
-              final isSelected = _selectedServiceId == service.id;
+              final isSelected = _selectedServices.any((s) => s.id == service.id);
               final serviceColor = ServiceIconHelper.colorFor(service.name);
 
               return Padding(
@@ -106,8 +124,11 @@ class _ServicePickerScreenState extends ConsumerState<ServicePickerScreen> {
                   ),
                   child: InkWell(
                     onTap: () => setState(() {
-                      _selectedServiceId = service.id;
-                      _selectedService = service;
+                      if (_selectedServices.any((s) => s.id == service.id)) {
+                        _selectedServices.removeWhere((s) => s.id == service.id);
+                      } else {
+                        _selectedServices.add(service);
+                      }
                     }),
                     borderRadius: BorderRadius.circular(20),
                     child: Padding(
@@ -204,7 +225,7 @@ class _ServicePickerScreenState extends ConsumerState<ServicePickerScreen> {
           const SizedBox(height: 8),
 
           // ── Date Picker section ─────────────────────────────────────
-          if (_selectedServiceId != null) ...[
+          if (_selectedServices.isNotEmpty) ...[
             const Divider(color: AppTheme.colorBorder, height: 40),
             Text("Select Date", style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 4),
@@ -333,7 +354,7 @@ class _ServicePickerScreenState extends ConsumerState<ServicePickerScreen> {
         Text("What service\ndo you need?", style: Theme.of(context).textTheme.displayLarge),
         const SizedBox(height: 8),
         Text(
-          "Select from our 8 specialized healthcare services",
+          "Select from our healthcare services",
           style: Theme.of(context).textTheme.bodyMedium,
         ),
       ],
@@ -341,7 +362,9 @@ class _ServicePickerScreenState extends ConsumerState<ServicePickerScreen> {
   }
 
   Widget _buildBottomBar() {
-    final serviceColor = ServiceIconHelper.colorFor(_selectedService?.name ?? '');
+    const primaryColor = AppTheme.colorPrimary;
+    final totalCents = _selectedServices.fold<int>(0, (sum, s) => sum + s.priceCents);
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       decoration: BoxDecoration(
@@ -359,47 +382,59 @@ class _ServicePickerScreenState extends ConsumerState<ServicePickerScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (_selectedService != null)
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: serviceColor.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Icon(ServiceIconHelper.iconFor(_selectedService!.name), color: serviceColor, size: 18),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(_selectedService!.name, style: Theme.of(context).textTheme.labelLarge),
-                        Text(
-                          "${DateFormat('EEE, d MMM').format(_selectedDate)}  ·  ${AppTheme.formatPrice(_selectedService!.priceCents)}",
-                          style: Theme.of(context).textTheme.bodyMedium!.copyWith(fontSize: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "${_selectedServices.length} ${_selectedServices.length == 1 ? 'Service' : 'Services'} Selected",
+                        style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
                         ),
-                      ],
-                    ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        _selectedServices.map((s) => s.name).join(', '),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.bodyMedium!.copyWith(fontSize: 12),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            const SizedBox(height: 12),
+                ),
+                const SizedBox(width: 16),
+                Text(
+                  AppTheme.formatPrice(totalCents),
+                  style: const TextStyle(
+                    color: primaryColor,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,
               height: 54,
               child: ElevatedButton(
                 onPressed: () {
-                  if (_selectedService != null) {
+                  if (_selectedServices.isNotEmpty) {
                     final dateStr = DateFormat('yyyy-MM-dd').format(_selectedDate);
+                    final firstService = _selectedServices.first;
+                    final pending = _selectedServices.sublist(1);
+
                     context.push('/book/slots', extra: {
-                      'serviceId': _selectedService!.id,
-                      'serviceName': _selectedService!.name,
-                      'durationMinutes': _selectedService!.durationMinutes,
-                      'priceCents': _selectedService!.priceCents,
+                      'serviceId': firstService.id,
+                      'serviceName': firstService.name,
+                      'durationMinutes': firstService.durationMinutes,
+                      'priceCents': firstService.priceCents,
                       'dateStr': dateStr,
                       'dateTime': _selectedDate,
+                      'pendingServices': pending,
                     });
                   }
                 },

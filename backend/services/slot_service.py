@@ -64,30 +64,52 @@ async def get_available_slots(
     qualified_caregiver_ids = [cg.id for cg in qualified_caregivers]
     qualified_cg_map = {cg.id: cg.name for cg in qualified_caregivers}
 
-    # 3. Generate candidate start times
+    # 3. Fetch ALL bookings for qualified caregivers and the patient on the target date
+    all_cg_bookings_result = await db.execute(
+        select(Booking.caregiver_id, Booking.start_time, Booking.end_time).where(
+            Booking.caregiver_id.in_(qualified_caregiver_ids),
+            Booking.booking_date == target_date,
+            Booking.status == "CONFIRMED"
+        )
+    )
+    cg_bookings = all_cg_bookings_result.all()
+
+    all_patient_bookings_result = await db.execute(
+        select(Booking.start_time, Booking.end_time).where(
+            Booking.patient_id == patient_id,
+            Booking.booking_date == target_date,
+            Booking.status == "CONFIRMED"
+        )
+    )
+    patient_bookings = all_patient_bookings_result.all()
+
+    # 4. Generate candidate start times
     candidate_start_times = generate_slots(target_date, duration)
 
     available_slots = []
 
-    # 4. Filter candidate slots
+    # 5. Filter candidate slots in memory
     for start_time in candidate_start_times:
         # Compute end_time for candidate slot
         start_dt = datetime.combine(target_date, start_time)
         end_dt = start_dt + timedelta(minutes=duration)
         end_time = end_dt.time()
 
-        # Query conflicting bookings for any of the qualified caregivers in this window
-        # Overlap check: bookings.start_time < end_time AND bookings.end_time > start_time
-        cg_conflict_result = await db.execute(
-            select(Booking.caregiver_id).where(
-                Booking.caregiver_id.in_(qualified_caregiver_ids),
-                Booking.booking_date == target_date,
-                Booking.status == "CONFIRMED",
-                Booking.start_time < end_time,
-                Booking.end_time > start_time
-            )
+        # Check patient conflicts in memory
+        patient_has_conflict = any(
+            pb.start_time < end_time and pb.end_time > start_time 
+            for pb in patient_bookings
         )
-        busy_caregiver_ids = set(cg_conflict_result.scalars().all())
+        # If patient has conflict, skip this slot
+        if patient_has_conflict:
+            continue
+
+        # Check caregiver conflicts in memory
+        busy_caregiver_ids = {
+            cb.caregiver_id for cb in cg_bookings
+            if cb.start_time < end_time and cb.end_time > start_time
+        }
+
         free_caregivers = [
             CaregiverRef(id=cg_id, name=qualified_cg_map[cg_id])
             for cg_id in qualified_caregiver_ids
@@ -96,22 +118,6 @@ async def get_available_slots(
 
         # If no caregiver is available, skip this slot
         if not free_caregivers:
-            continue
-
-        # Query conflicting bookings for patient in this window
-        patient_conflict_result = await db.execute(
-            select(Booking.id).where(
-                Booking.patient_id == patient_id,
-                Booking.booking_date == target_date,
-                Booking.status == "CONFIRMED",
-                Booking.start_time < end_time,
-                Booking.end_time > start_time
-            )
-        )
-        patient_has_conflict = patient_conflict_result.first() is not None
-
-        # If patient has conflict, skip this slot
-        if patient_has_conflict:
             continue
 
         # Slot is available!

@@ -6,12 +6,15 @@ import 'package:intl/intl.dart';
 import '../../core/theme.dart';
 import '../../models/service.dart';
 import '../../providers/slots_provider.dart';
+import '../../providers/faqs_provider.dart';
 import '../../widgets/shimmer_box.dart';
 import '../../widgets/service_icon_helper.dart';
 import '../home/home_screen.dart' show AppBottomNav;
 
 class ExploreScreen extends ConsumerWidget {
-  const ExploreScreen({super.key});
+  final String? searchQuery;
+  
+  const ExploreScreen({super.key, this.searchQuery});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -27,11 +30,20 @@ class ExploreScreen extends ConsumerWidget {
       Service(id: 7, name: "Dietary & Nutrition Consult", durationMinutes: 45, priceCents: 5000, description: "Personalized meal and diet plans"),
       Service(id: 8, name: "Vital Signs Monitoring",  durationMinutes: 15,  priceCents: 2000,  description: "Regular blood pressure, sugar and pulse check"),
     ];
+    
+    List<Service> filterServices(List<Service> items) {
+      if (searchQuery == null || searchQuery!.isEmpty) return items;
+      final q = searchQuery!.toLowerCase();
+      return items.where((s) => 
+        s.name.toLowerCase().contains(q) || 
+        s.description.toLowerCase().contains(q)
+      ).toList();
+    }
 
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        title: const Text("Explore Services"),
+        title: Text(searchQuery != null && searchQuery!.isNotEmpty ? "Search: $searchQuery" : "Explore Services"),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
           child: Container(height: 1, color: AppTheme.colorBorder),
@@ -39,8 +51,8 @@ class ExploreScreen extends ConsumerWidget {
       ),
       body: servicesAsync.when(
         loading: () => _buildShimmer(),
-        error: (_, __) => _buildGrid(context, fallbackServices),
-        data: (data) => _buildGrid(context, data.isNotEmpty ? data.cast<Service>() : fallbackServices),
+        error: (_, __) => _buildGrid(context, ref, filterServices(fallbackServices)),
+        data: (data) => _buildGrid(context, ref, filterServices(data.isNotEmpty ? data.cast<Service>() : fallbackServices)),
       ),
       bottomNavigationBar: const AppBottomNav(currentIndex: 1),
     );
@@ -79,7 +91,7 @@ class ExploreScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildGrid(BuildContext context, List<Service> services) {
+  Widget _buildGrid(BuildContext context, WidgetRef ref, List<Service> services) {
     return CustomScrollView(
       slivers: [
         SliverToBoxAdapter(
@@ -116,7 +128,102 @@ class ExploreScreen extends ConsumerWidget {
             ),
           ),
         ),
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Divider(color: AppTheme.colorBorder, height: 40),
+                Text(
+                  "Frequently Asked Questions",
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                const SizedBox(height: 4),
+                const Text(
+                  "Find quick answers to common healthcare inquiries",
+                  style: TextStyle(color: AppTheme.colorTextMuted, fontSize: 13),
+                ),
+                const SizedBox(height: 16),
+              ],
+            ),
+          ),
+        ),
+        _buildSliverFAQs(ref),
       ],
+    );
+  }
+
+  Widget _buildSliverFAQs(WidgetRef ref) {
+    final faqsAsync = ref.watch(faqsProvider);
+
+    return faqsAsync.when(
+      loading: () => const SliverToBoxAdapter(
+        child: Padding(
+          padding: EdgeInsets.all(32),
+          child: Center(child: CircularProgressIndicator(color: AppTheme.colorPrimary)),
+        ),
+      ),
+      error: (err, stack) => const SliverToBoxAdapter(
+        child: SizedBox.shrink(),
+      ),
+      data: (faqs) {
+        if (faqs.isEmpty) {
+          return const SliverToBoxAdapter(child: SizedBox.shrink());
+        }
+
+        return SliverPadding(
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 40),
+          sliver: SliverList(
+            delegate: SliverChildBuilderDelegate(
+              (context, index) {
+                final faq = faqs[index];
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: AppTheme.colorSurface,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: AppTheme.colorBorder),
+                    ),
+                    child: Theme(
+                      data: Theme.of(context).copyWith(
+                        dividerColor: Colors.transparent,
+                      ),
+                      child: ExpansionTile(
+                        iconColor: AppTheme.colorPrimary,
+                        collapsedIconColor: AppTheme.colorTextMuted,
+                        leading: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: AppTheme.colorPrimaryLight,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(Icons.help_outline, color: AppTheme.colorPrimary, size: 18),
+                        ),
+                        title: Text(
+                          faq['question'] as String,
+                          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                        ),
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+                            child: Text(
+                              faq['answer'] as String,
+                              style: const TextStyle(color: AppTheme.colorTextMuted, fontSize: 13, height: 1.5),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
+              childCount: faqs.length,
+            ),
+          ),
+        );
+      },
     );
   }
 }

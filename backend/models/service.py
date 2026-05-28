@@ -9,4 +9,6 @@ class Service(Base):
     description = Column(Text, nullable=True)
     duration_minutes = Column(Integer, nullable=False) # Must be % 15 == 0 in DDL
     price_cents = Column(Integer, nullable=False)
+    image_url = Column(String(255), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+

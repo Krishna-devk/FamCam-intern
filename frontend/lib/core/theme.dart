@@ -32,6 +32,34 @@ class AppTheme {
     return '${formatPrice(cents)}/session';
   }
 
+  static InputDecoration inputDecoration({
+    required String hintText,
+    required IconData prefixIcon,
+    Widget? suffixIcon,
+  }) {
+    return InputDecoration(
+      hintText: hintText,
+      hintStyle: const TextStyle(color: colorTextMuted, fontSize: 14),
+      prefixIcon: Icon(prefixIcon, color: colorTextMuted, size: 20),
+      suffixIcon: suffixIcon,
+      filled: true,
+      fillColor: colorBg,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: const BorderSide(color: colorBorder),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: const BorderSide(color: colorBorder),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: const BorderSide(color: colorPrimary, width: 1.5),
+      ),
+    );
+  }
+
   static ThemeData get lightTheme {
     return ThemeData(
       useMaterial3: true,

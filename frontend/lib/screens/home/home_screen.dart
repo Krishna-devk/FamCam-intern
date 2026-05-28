@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 
 import '../../core/theme.dart';
 import '../../providers/cart_provider.dart';
+import '../../providers/session_provider.dart';
+import '../../providers/bookings_provider.dart';
+import '../../widgets/service_icon_helper.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -19,6 +23,12 @@ class HomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final cartItems = ref.watch(cartProvider);
     final cartCount = cartItems.length;
+    final patientId = ref.watch(selectedPatientIdProvider);
+    final bookingsAsync = ref.watch(bookingsProvider(patientId));
+    final session = ref.watch(sessionProvider).value;
+    final userName = session?.name ?? "";
+    final initials = userName.isNotEmpty ? userName.split(' ').map((n) => n.isNotEmpty ? n[0] : '').join().toUpperCase() : "";
+    final initialsSafe = initials.isNotEmpty ? (initials.length > 2 ? initials.substring(0, 2) : initials) : "U";
 
     return Scaffold(
       body: SafeArea(
@@ -44,10 +54,10 @@ class HomeScreen extends ConsumerWidget {
                             end: Alignment.bottomRight,
                           ),
                         ),
-                        child: const Center(
+                        child: Center(
                           child: Text(
-                            "AM",
-                            style: TextStyle(
+                            initialsSafe,
+                            style: const TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
                               fontSize: 16,
@@ -64,7 +74,7 @@ class HomeScreen extends ConsumerWidget {
                             style: Theme.of(context).textTheme.bodyMedium,
                           ),
                           Text(
-                            "Arjun Mehta",
+                            userName,
                             style: Theme.of(context).textTheme.titleMedium,
                           ),
                         ],
@@ -233,7 +243,7 @@ class HomeScreen extends ConsumerWidget {
               const SizedBox(height: 12),
               _ActionTile(
                 title: "Explore All Services",
-                subtitle: "Browse our 8 care categories",
+                subtitle: "Browse our services",
                 icon: Icons.explore_outlined,
                 color: AppTheme.colorWarning,
                 onTap: () => context.push('/explore'),
@@ -246,18 +256,140 @@ class HomeScreen extends ConsumerWidget {
                 children: [
                   Text("Coming Up", style: Theme.of(context).textTheme.titleLarge),
                   TextButton(
-                    onPressed: () {},
-                    child: const Text("See all", style: TextStyle(color: AppTheme.colorPrimary)),
+                    onPressed: () {
+                      ref.invalidate(bookingsProvider(patientId));
+                    },
+                    child: const Text("Refresh", style: TextStyle(color: AppTheme.colorPrimary)),
                   ),
                 ],
               ),
               const SizedBox(height: 12),
-              const _UpcomingCard(
-                service: "Physiotherapy",
-                caregiver: "Priya Sharma",
-                dateLabel: "Tomorrow, 9:00 AM",
-                color: AppTheme.colorPrimary,
-                icon: Icons.accessibility_new_outlined,
+              bookingsAsync.when(
+                loading: () => const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 20),
+                  child: Center(child: CircularProgressIndicator(color: AppTheme.colorPrimary)),
+                ),
+                error: (err, stack) => Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppTheme.colorBg,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: AppTheme.colorBorder),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.cloud_off, color: AppTheme.colorTextMuted),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          "Offline Mode. Enable network to sync schedules.",
+                          style: TextStyle(color: AppTheme.colorTextMuted, fontSize: 13),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                data: (bookingsList) {
+                  if (bookingsList.isEmpty) {
+                    return Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+                      decoration: BoxDecoration(
+                        color: AppTheme.colorBg,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: AppTheme.colorBorder),
+                      ),
+                      child: Column(
+                        children: [
+                          const Icon(Icons.calendar_today_outlined, color: AppTheme.colorTextMuted, size: 28),
+                          const SizedBox(height: 8),
+                          Text(
+                            "No upcoming appointments scheduled.",
+                            style: Theme.of(context).textTheme.titleMedium!.copyWith(fontSize: 14),
+                          ),
+                          const SizedBox(height: 4),
+                          const Text(
+                            "Tap 'Book New Appointment' to schedule care.",
+                            style: TextStyle(color: AppTheme.colorTextMuted, fontSize: 12),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+
+                  // Take only the next 3 bookings for clean dashboard presentation
+                  final displayList = bookingsList.take(3).toList();
+
+                  return ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: displayList.length,
+                    itemBuilder: (context, index) {
+                      final booking = displayList[index];
+                      final serviceColor = ServiceIconHelper.colorFor(booking.serviceName);
+                      final serviceIcon = ServiceIconHelper.iconFor(booking.serviceName);
+                      final formattedDate = DateFormat('EEEE, d MMMM').format(booking.date);
+                      final dateLabel = "$formattedDate, ${booking.startTime}";
+
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: _UpcomingCard(
+                          bookingId: booking.bookingId,
+                          service: booking.serviceName,
+                          caregiver: booking.caregiverName,
+                          dateLabel: dateLabel,
+                          color: serviceColor,
+                          icon: serviceIcon,
+                          onCancel: () async {
+                            final confirm = await showDialog<bool>(
+                              context: context,
+                              builder: (context) => AlertDialog(
+                                title: const Text("Cancel Booking?"),
+                                content: Text("Are you sure you want to cancel your scheduled ${booking.serviceName}?"),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(context, false),
+                                    child: const Text("No, Keep"),
+                                  ),
+                                  ElevatedButton(
+                                    style: ElevatedButton.styleFrom(backgroundColor: AppTheme.colorError),
+                                    onPressed: () => Navigator.pop(context, true),
+                                    child: const Text("Yes, Cancel", style: TextStyle(color: Colors.white)),
+                                  ),
+                                ],
+                              ),
+                            );
+
+                            if (confirm == true) {
+                              try {
+                                await ref
+                                    .read(bookingsProvider(patientId).notifier)
+                                    .cancelBooking(booking.bookingId);
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text("Booking cancelled successfully."),
+                                      backgroundColor: AppTheme.colorSuccess,
+                                    ),
+                                  );
+                                }
+                              } catch (e) {
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text("Error: ${e.toString()}"),
+                                      backgroundColor: AppTheme.colorError,
+                                    ),
+                                  );
+                                }
+                              }
+                            }
+                          },
+                        ),
+                      );
+                    },
+                  );
+                },
               ),
               const SizedBox(height: 28),
             ],
@@ -390,18 +522,22 @@ class _ActionTile extends StatelessWidget {
 }
 
 class _UpcomingCard extends StatelessWidget {
+  final int bookingId;
   final String service;
   final String caregiver;
   final String dateLabel;
   final Color color;
   final IconData icon;
+  final VoidCallback? onCancel;
 
   const _UpcomingCard({
+    required this.bookingId,
     required this.service,
     required this.caregiver,
     required this.dateLabel,
     required this.color,
     required this.icon,
+    this.onCancel,
   });
 
   @override
@@ -449,16 +585,36 @@ class _UpcomingCard extends StatelessWidget {
               ],
             ),
           ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: AppTheme.colorSuccessLight,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: const Text(
-              "Confirmed",
-              style: TextStyle(color: AppTheme.colorSuccess, fontSize: 11, fontWeight: FontWeight.bold),
-            ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: AppTheme.colorSuccessLight,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Text(
+                  "Confirmed",
+                  style: TextStyle(color: AppTheme.colorSuccess, fontSize: 11, fontWeight: FontWeight.bold),
+                ),
+              ),
+              if (onCancel != null) ...[
+                const SizedBox(height: 8),
+                TextButton(
+                  onPressed: onCancel,
+                  style: TextButton.styleFrom(
+                    padding: EdgeInsets.zero,
+                    minimumSize: const Size(40, 24),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: const Text(
+                    "Cancel",
+                    style: TextStyle(color: AppTheme.colorError, fontSize: 11, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
+            ],
           ),
         ],
       ),

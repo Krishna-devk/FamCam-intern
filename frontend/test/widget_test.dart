@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:frontend/app.dart';
+import 'package:famcam/app.dart';
 
 void main() {
   testWidgets('FamCareApp boots successfully and displays home dashboard', (WidgetTester tester) async {

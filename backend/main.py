@@ -8,6 +8,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from routers.slots import router as slots_router
 from routers.checkout import router as checkout_router
+from routers.auth import router as auth_router
+from routers.bookings import router as bookings_router
+from routers.faq import router as faq_router
 from exceptions import BookingConflictError, booking_conflict_exception_handler
 
 app = FastAPI(
@@ -31,7 +34,13 @@ app.add_middleware(
 # Register routers
 app.include_router(slots_router)
 app.include_router(checkout_router)
+app.include_router(auth_router)
+app.include_router(bookings_router)
+app.include_router(faq_router)
 
+
+# Health check endpoint
 @app.get("/health")
 def health():
     return {"status": "ok"}
+

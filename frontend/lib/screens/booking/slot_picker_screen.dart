@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../../core/theme.dart';
 import '../../models/available_slot.dart';
 import '../../models/cart_item.dart';
+import '../../models/service.dart';
 import '../../providers/cart_provider.dart';
 import '../../providers/session_provider.dart';
 import '../../providers/slots_provider.dart';
@@ -19,6 +20,7 @@ class SlotPickerScreen extends ConsumerStatefulWidget {
   final int priceCents;
   final String dateStr;
   final DateTime dateTime;
+  final List<Service>? pendingServices;
 
   const SlotPickerScreen({
     super.key,
@@ -28,6 +30,7 @@ class SlotPickerScreen extends ConsumerStatefulWidget {
     required this.priceCents,
     required this.dateStr,
     required this.dateTime,
+    this.pendingServices,
   });
 
   @override
@@ -141,13 +144,15 @@ class _SlotPickerScreenState extends ConsumerState<SlotPickerScreen>
           Expanded(
             child: slotsAsync.when(
               loading: () => _buildShimmerSlots(),
-              error: (_, __) => _buildSlotsErrorState(),
+              error: (e, st) {
+                return _buildSlotsErrorState();
+              },
               data: (data) => _buildSlotsContent(data),
             ),
           ),
         ],
       ),
-      bottomNavigationBar: _selectedSlotTime != null && _selectedCaregiver != null
+      bottomNavigationBar: _selectedSlotTime != null
           ? _buildBottomBar()
           : null,
     );
@@ -394,6 +399,92 @@ class _SlotPickerScreenState extends ConsumerState<SlotPickerScreen>
               style: Theme.of(context).textTheme.bodyMedium,
             ),
             const SizedBox(height: 16),
+            
+            // Auto-Assign Option
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: InkWell(
+                onTap: () => setState(() => _selectedCaregiver = null),
+                borderRadius: BorderRadius.circular(16),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppTheme.colorSurface,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: _selectedCaregiver == null ? AppTheme.colorSuccess : AppTheme.colorBorder,
+                      width: _selectedCaregiver == null ? 2 : 1.0,
+                    ),
+                    boxShadow: _selectedCaregiver == null
+                        ? [BoxShadow(color: AppTheme.colorSuccess.withValues(alpha: 0.08), blurRadius: 12, offset: const Offset(0, 4))]
+                        : [],
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: AppTheme.colorSuccess.withValues(alpha: 0.12),
+                        ),
+                        child: const Center(
+                          child: Icon(
+                            Icons.bolt,
+                            color: AppTheme.colorSuccess,
+                            size: 24,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "Auto-Assign Caregiver",
+                              style: Theme.of(context).textTheme.titleMedium!.copyWith(
+                                    color: _selectedCaregiver == null ? AppTheme.colorSuccess : AppTheme.colorTextPrimary,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                            ),
+                            const SizedBox(height: 2),
+                            const Text(
+                              "System will assign the best matching verified nurse",
+                              style: TextStyle(fontSize: 12, color: AppTheme.colorTextMuted),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (_selectedCaregiver == null)
+                        Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: const BoxDecoration(
+                            color: AppTheme.colorSuccess,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.check, color: Colors.white, size: 14),
+                        )
+                      else
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: AppTheme.colorBg,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: AppTheme.colorBorder),
+                          ),
+                          child: const Text(
+                            "Select",
+                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.colorSuccess),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
             ListView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
@@ -412,7 +503,13 @@ class _SlotPickerScreenState extends ConsumerState<SlotPickerScreen>
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 12),
                   child: InkWell(
-                    onTap: () => setState(() => _selectedCaregiver = cg),
+                    onTap: () => setState(() {
+                      if (_selectedCaregiver?.id == cg.id) {
+                        _selectedCaregiver = null;
+                      } else {
+                        _selectedCaregiver = cg;
+                      }
+                    }),
                     borderRadius: BorderRadius.circular(16),
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 180),
@@ -536,8 +633,14 @@ class _SlotPickerScreenState extends ConsumerState<SlotPickerScreen>
                   const Icon(Icons.person_outline, size: 16, color: AppTheme.colorTextMuted),
                   const SizedBox(width: 6),
                   Text(
-                    _selectedCaregiver?.name.split(' ').first ?? '',
-                    style: Theme.of(context).textTheme.bodyMedium!.copyWith(fontSize: 13),
+                    _selectedCaregiver != null 
+                        ? _selectedCaregiver!.name.split(' ').first 
+                        : 'Auto-Assign',
+                    style: TextStyle(
+                      fontSize: 13, 
+                      fontWeight: _selectedCaregiver == null ? FontWeight.w600 : FontWeight.normal,
+                      color: _selectedCaregiver == null ? AppTheme.colorSuccess : AppTheme.colorTextPrimary,
+                    ),
                   ),
                   const Spacer(),
                   Text(
@@ -564,7 +667,36 @@ class _SlotPickerScreenState extends ConsumerState<SlotPickerScreen>
   }
 
   void _addToCart() {
-    if (_selectedSlotTime == null || _selectedCaregiver == null) return;
+    if (_selectedSlotTime == null) return;
+
+    final patientId = ref.read(selectedPatientIdProvider);
+    final activeDateStr = DateFormat('yyyy-MM-dd').format(_selectedDate!);
+    final searchArgs = SlotSearchArgs(
+      serviceId: widget.serviceId,
+      dateStr: activeDateStr,
+      patientId: patientId,
+    );
+    final slotsAsync = ref.read(availableSlotsProvider(searchArgs));
+    final slots = slotsAsync.value ?? [];
+    if (slots.isEmpty) return;
+
+    final activeSlot = slots.firstWhere(
+      (s) => s.startTime == _selectedSlotTime,
+      orElse: () => slots.first,
+    );
+
+    final finalCaregiver = _selectedCaregiver ?? 
+        (activeSlot.availableCaregivers.isNotEmpty ? activeSlot.availableCaregivers.first : null);
+    
+    if (finalCaregiver == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("No caregiver is available for this slot."),
+          backgroundColor: AppTheme.colorWarning,
+        ),
+      );
+      return;
+    }
 
     final parts = _selectedSlotTime!.split(':');
     final startTOD = TimeOfDay(
@@ -575,8 +707,8 @@ class _SlotPickerScreenState extends ConsumerState<SlotPickerScreen>
     final cartItem = CartItem(
       serviceId: widget.serviceId,
       serviceName: widget.serviceName,
-      caregiverId: _selectedCaregiver!.id,
-      caregiverName: _selectedCaregiver!.name,
+      caregiverId: finalCaregiver.id,
+      caregiverName: finalCaregiver.name,
       date: _selectedDate!,
       startTime: startTOD,
       durationMinutes: widget.durationMinutes,
@@ -613,6 +745,21 @@ class _SlotPickerScreenState extends ConsumerState<SlotPickerScreen>
       ),
     );
 
-    context.go('/home');
+    if (widget.pendingServices != null && widget.pendingServices!.isNotEmpty) {
+      final nextService = widget.pendingServices!.first;
+      final remaining = widget.pendingServices!.sublist(1);
+      
+      context.pushReplacement('/book/slots', extra: {
+        'serviceId': nextService.id,
+        'serviceName': nextService.name,
+        'durationMinutes': nextService.durationMinutes,
+        'priceCents': nextService.priceCents,
+        'dateStr': widget.dateStr,
+        'dateTime': widget.dateTime,
+        'pendingServices': remaining,
+      });
+    } else {
+      context.go('/home');
+    }
   }
 }

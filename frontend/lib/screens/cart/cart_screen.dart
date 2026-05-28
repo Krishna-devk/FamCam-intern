@@ -100,6 +100,16 @@ class _CartScreenState extends ConsumerState<CartScreen>
 
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/home');
+            }
+          },
+        ),
         title: Text(cart.isEmpty ? 'My Cart' : 'My Cart (${cart.length})'),
         actions: [
           if (cart.isNotEmpty)
@@ -169,7 +179,7 @@ class _CartScreenState extends ConsumerState<CartScreen>
               child: ElevatedButton.icon(
                 icon: const Icon(Icons.add_circle_outline, size: 20),
                 label: const Text("Browse Services"),
-                onPressed: () => context.go('/book/service'),
+                onPressed: () => context.pushReplacement('/book/service'),
               ),
             ),
           ],

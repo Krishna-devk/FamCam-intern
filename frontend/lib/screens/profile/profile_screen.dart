@@ -2,12 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme.dart';
 import '../../screens/home/home_screen.dart';
+import '../../providers/session_provider.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final session = ref.watch(sessionProvider).value;
+    final userName = session?.name ?? "User";
+    final userEmail = session?.email ?? "";
+    final initials = userName.isNotEmpty
+        ? userName.split(' ').map((n) => n.isNotEmpty ? n[0] : '').join().toUpperCase()
+        : "U";
+    final initialsSafe = initials.length > 2 ? initials.substring(0, 2) : initials;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text("Profile Management"),
@@ -35,10 +44,10 @@ class ProfileScreen extends ConsumerWidget {
                           end: Alignment.bottomRight,
                         ),
                       ),
-                      child: const Center(
+                      child: Center(
                         child: Text(
-                          "AM",
-                          style: TextStyle(
+                          initialsSafe,
+                          style: const TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
                             fontSize: 32,
@@ -48,12 +57,12 @@ class ProfileScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      "Arjun Mehta",
+                      userName,
                       style: Theme.of(context).textTheme.displayLarge!.copyWith(fontSize: 22),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      "arjun.mehta@example.com",
+                      userEmail,
                       style: Theme.of(context).textTheme.bodyMedium,
                     ),
                     const SizedBox(height: 8),
@@ -77,11 +86,7 @@ class ProfileScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 32),
 
-              // ── Family Members Section ──────────────────────────────────
-              Text("Family & Patients", style: Theme.of(context).textTheme.titleLarge),
-              const SizedBox(height: 14),
-              _buildFamilyList(context),
-              const SizedBox(height: 28),
+
 
               // ── Personal Information & Insurance ────────────────────────
               Text("Account Settings", style: Theme.of(context).textTheme.titleLarge),
@@ -159,9 +164,7 @@ class ProfileScreen extends ConsumerWidget {
                   side: const BorderSide(color: AppTheme.colorError),
                 ).buildElevated(
                   onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("Sign-out process is under development")),
-                    );
+                    ref.read(sessionProvider.notifier).logout();
                   },
                   child: const Text("Sign Out"),
                 ),
@@ -175,60 +178,7 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildFamilyList(BuildContext context) {
-    final family = [
-      {"name": "Meera Mehta", "relation": "Spouse", "initials": "MM"},
-      {"name": "Ramesh Mehta", "relation": "Father (Physiotherapy patient)", "initials": "RM"},
-      {"name": "Kavita Mehta", "relation": "Mother", "initials": "KM"},
-    ];
 
-    return Container(
-      decoration: BoxDecoration(
-        color: AppTheme.colorSurface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppTheme.colorBorder),
-      ),
-      child: Column(
-        children: [
-          ...family.map((member) => Container(
-            decoration: const BoxDecoration(
-              border: Border(bottom: BorderSide(color: AppTheme.colorDivider)),
-            ),
-            child: ListTile(
-              contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-              leading: CircleAvatar(
-                backgroundColor: AppTheme.colorPrimaryLight,
-                foregroundColor: AppTheme.colorPrimary,
-                child: Text(member["initials"]!, style: const TextStyle(fontWeight: FontWeight.bold)),
-              ),
-              title: Text(member["name"]!, style: Theme.of(context).textTheme.titleMedium),
-              subtitle: Text(member["relation"]!, style: Theme.of(context).textTheme.bodyMedium),
-              trailing: const Icon(Icons.chevron_right, color: AppTheme.colorTextMuted),
-              onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text("${member["name"]}'s health records is under development")),
-                );
-              },
-            ),
-          )),
-          ListTile(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-            leading: const CircleAvatar(
-              backgroundColor: AppTheme.colorSuccessLight,
-              foregroundColor: AppTheme.colorSuccess,
-              child: Icon(Icons.add),
-            ),
-            title: const Text("Add New Family Member", style: TextStyle(color: AppTheme.colorSuccess, fontWeight: FontWeight.bold)),
-            onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text("Add family member feature is under development")),
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildSettingItem({
     required BuildContext context,

@@ -4,10 +4,11 @@ from dotenv import load_dotenv
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 from sqlalchemy.orm import declarative_base
 
-load_dotenv()
+env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
+load_dotenv(dotenv_path=env_path, override=True)
 
 # Default fallback to sqlite+aiosqlite or standard postgresql for local testing if DATABASE_URL is not set
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://postgres:postgres@localhost:5432/famcare")
+DATABASE_URL = os.getenv("DATABASE_URL", " ")
 
 # Convert postgresql:// to postgresql+asyncpg:// if needed
 if DATABASE_URL.startswith("postgresql://"):

@@ -8,4 +8,5 @@ class User(Base):
     name = Column(String(100), nullable=False)
     email = Column(String(255), unique=True, nullable=False)
     role = Column(String(20), nullable=False) # 'PATIENT' or 'CAREGIVER'
+    password = Column(String(255), nullable=True) # Nullable to support existing seeded caregivers
     created_at = Column(DateTime(timezone=True), server_default=func.now())

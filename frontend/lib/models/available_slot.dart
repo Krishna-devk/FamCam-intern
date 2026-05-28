@@ -35,7 +35,7 @@ class AvailableSlot {
 
   factory AvailableSlot.fromJson(Map<String, dynamic> json) {
     var list = json['available_caregivers'] as List;
-    List<Caregiver> caregivers = list.map((i) => Caregiver.fromJson(i)).toList();
+    List<Caregiver> caregivers = list.map((i) => Caregiver.fromJson(i as Map<String, dynamic>)).toList();
     
     return AvailableSlot(
       startTime: json['start_time'] as String,
