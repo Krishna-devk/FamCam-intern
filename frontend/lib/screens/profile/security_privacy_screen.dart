@@ -39,6 +39,7 @@ class _SecurityPrivacyScreenState extends ConsumerState<SecurityPrivacyScreen> {
             title: const Text("Change Password", style: TextStyle(color: AppTheme.colorTextPrimary)),
             content: Column(
               mainAxisSize: MainAxisSize.min,
+              children: [
                 TextField(
                   controller: _currentPasswordController,
                   obscureText: _obscureCurrentPassword,
