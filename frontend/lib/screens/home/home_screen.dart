@@ -30,6 +30,29 @@ class HomeScreen extends ConsumerWidget {
     final initials = userName.isNotEmpty ? userName.split(' ').map((n) => n.isNotEmpty ? n[0] : '').join().toUpperCase() : "";
     final initialsSafe = initials.isNotEmpty ? (initials.length > 2 ? initials.substring(0, 2) : initials) : "U";
 
+    final bookingsList = bookingsAsync.value ?? [];
+    
+    final now = DateTime.now();
+    final startOfWeek = DateTime(now.year, now.month, now.day).subtract(Duration(days: now.weekday - 1));
+    
+    final dailyCounts = List<int>.filled(7, 0);
+    int currentWeekCount = 0;
+    
+    for (final b in bookingsList) {
+      final bDate = DateTime(b.date.year, b.date.month, b.date.day);
+      final diff = bDate.difference(startOfWeek).inDays;
+      if (diff >= 0 && diff < 7) {
+        dailyCounts[diff]++;
+        currentWeekCount++;
+      }
+    }
+    
+    final maxCount = dailyCounts.reduce((a, b) => a > b ? a : b);
+    final List<double> heights = List.generate(7, (index) {
+      if (maxCount == 0) return 0.1; 
+      return 0.1 + (0.85 * (dailyCounts[index] / maxCount)); 
+    });
+
     return Scaffold(
       body: SafeArea(
         child: SingleChildScrollView(
@@ -151,7 +174,7 @@ class HomeScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      "3 services scheduled this week",
+                      "$currentWeekCount services scheduled this week",
                       style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.7),
                         fontSize: 13,
@@ -161,7 +184,7 @@ class HomeScreen extends ConsumerWidget {
                     SizedBox(
                       height: 100,
                       width: double.infinity,
-                      child: CustomPaint(painter: ChartPainter()),
+                      child: CustomPaint(painter: ChartPainter(heights: heights, dailyCounts: dailyCounts, activeIndex: now.weekday - 1)),
                     ),
                     const SizedBox(height: 16),
                     // Day labels
@@ -186,20 +209,20 @@ class HomeScreen extends ConsumerWidget {
               // ── Metric Row ───────────────────────────────────────────
               Row(
                 children: [
-                  const Expanded(
+                  Expanded(
                     child: _MetricCard(
-                      title: "Scheduled",
-                      value: "3 Services",
+                      title: "This Week",
+                      value: "$currentWeekCount Services",
                       icon: Icons.calendar_today_outlined,
                       color: AppTheme.colorPrimary,
                     ),
                   ),
                   const SizedBox(width: 12),
-                  const Expanded(
+                  Expanded(
                     child: _MetricCard(
-                      title: "Fill Rate",
-                      value: "65%",
-                      icon: Icons.speed_outlined,
+                      title: "Upcoming",
+                      value: "${bookingsList.length} Services",
+                      icon: Icons.event_available_outlined,
                       color: AppTheme.colorSuccess,
                     ),
                   ),
@@ -690,6 +713,12 @@ class _BottomNav extends ConsumerWidget {
 // ── Chart Painter ─────────────────────────────────────────────────────────────
 
 class ChartPainter extends CustomPainter {
+  final List<double> heights;
+  final List<int> dailyCounts;
+  final int activeIndex;
+
+  ChartPainter({required this.heights, required this.dailyCounts, required this.activeIndex});
+
   @override
   void paint(Canvas canvas, Size size) {
     final dimPaint = Paint()
@@ -708,7 +737,6 @@ class ChartPainter extends CustomPainter {
     const double barWidth = 14;
     final double totalSpace = size.width - (barWidth * barCount);
     final double space = totalSpace / (barCount - 1);
-    final heights = [0.4, 0.65, 0.5, 0.75, 0.95, 0.6, 0.7];
 
     for (int i = 0; i < 7; i++) {
       final double x = i * (barWidth + space);
@@ -720,12 +748,14 @@ class ChartPainter extends CustomPainter {
         const Radius.circular(8),
       );
 
-      canvas.drawRRect(rect, i == 4 ? activePaint : dimPaint);
+      canvas.drawRRect(rect, dailyCounts[i] > 0 ? activePaint : dimPaint);
     }
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant ChartPainter oldDelegate) {
+    return oldDelegate.activeIndex != activeIndex || oldDelegate.heights != heights || oldDelegate.dailyCounts != dailyCounts;
+  }
 }
 
 // ── Export BottomNav for reuse ─────────────────────────────────────────────────

@@ -45,9 +45,9 @@ class SessionNotifier extends AsyncNotifier<UserEntity?> {
     state = const AsyncValue.loading();
     try {
       final client = ref.read(apiClientProvider);
-      final user = await client.postRegister(name, email, role, password);
-      await _saveSession(user);
-      state = AsyncValue.data(user);
+      await client.postRegister(name, email, role, password);
+      // Do not auto-login on register
+      state = const AsyncValue.data(null);
     } catch (err, stack) {
       state = AsyncValue.error(err, stack);
       rethrow;

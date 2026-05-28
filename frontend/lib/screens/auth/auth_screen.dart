@@ -30,6 +30,9 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     try {
       if (_isLogin) {
         await ref.read(sessionProvider.notifier).login(_email.trim(), _password.trim());
+        if (mounted) {
+          context.go('/home');
+        }
       } else {
         await ref.read(sessionProvider.notifier).register(
               _name.trim(),
@@ -37,9 +40,17 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
               _role,
               _password.trim(),
             );
-      }
-      if (mounted) {
-        context.go('/home');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Registration successful! Please log in."),
+              backgroundColor: AppTheme.colorSuccess,
+            ),
+          );
+          setState(() {
+            _isLogin = true;
+          });
+        }
       }
     } catch (e) {
       if (mounted) {

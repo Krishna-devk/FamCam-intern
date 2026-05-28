@@ -84,6 +84,13 @@ class _SlotPickerScreenState extends ConsumerState<SlotPickerScreen>
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.serviceName),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.delete_outline, color: AppTheme.colorError),
+            tooltip: 'Drop Service',
+            onPressed: _confirmDropItem,
+          ),
+        ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
           child: Container(height: 1, color: AppTheme.colorBorder),
@@ -760,6 +767,61 @@ class _SlotPickerScreenState extends ConsumerState<SlotPickerScreen>
       });
     } else {
       context.go('/home');
+    }
+  }
+
+  void _confirmDropItem() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Drop Service"),
+        content: Text("Are you sure you want to cancel adding ${widget.serviceName}?"),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(), // Close dialog
+            child: const Text("Cancel"),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop(); // Close dialog
+              _dropItem();
+            },
+            child: const Text("Drop", style: TextStyle(color: AppTheme.colorError, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _dropItem() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text("Cancelled ${widget.serviceName}."),
+        backgroundColor: AppTheme.colorTextMuted,
+        duration: const Duration(seconds: 2),
+      ),
+    );
+
+    if (widget.pendingServices != null && widget.pendingServices!.isNotEmpty) {
+      final nextService = widget.pendingServices!.first;
+      final remaining = widget.pendingServices!.sublist(1);
+      
+      context.pushReplacement('/book/slots', extra: {
+        'serviceId': nextService.id,
+        'serviceName': nextService.name,
+        'durationMinutes': nextService.durationMinutes,
+        'priceCents': nextService.priceCents,
+        'dateStr': widget.dateStr,
+        'dateTime': widget.dateTime,
+        'pendingServices': remaining,
+      });
+    } else {
+      if (context.canPop()) {
+        context.pop();
+      } else {
+        context.go('/home');
+      }
     }
   }
 }
