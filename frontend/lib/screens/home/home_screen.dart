@@ -105,17 +105,17 @@ class HomeScreen extends ConsumerWidget {
                     ],
                   ),
                   // Notification bell
-                  Container(
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: AppTheme.colorBorder),
-                      color: AppTheme.colorSurface,
-                    ),
-                    child: IconButton(
-                      icon: const Icon(Icons.notifications_outlined, color: AppTheme.colorTextPrimary),
-                      onPressed: () {},
-                    ),
-                  ),
+                  // Container(
+                  //   decoration: BoxDecoration(
+                  //     shape: BoxShape.circle,
+                  //     border: Border.all(color: AppTheme.colorBorder),
+                  //     color: AppTheme.colorSurface,
+                  //   ),
+                  //   child: IconButton(
+                  //     icon: const Icon(Icons.notifications_outlined, color: AppTheme.colorTextPrimary),
+                  //     onPressed: () {},
+                  //   ),
+                  // ),
                 ],
               ),
               const SizedBox(height: 28),
