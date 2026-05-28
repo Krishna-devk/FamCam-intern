@@ -3,7 +3,7 @@ import pytest
 pytestmark = pytest.mark.asyncio
 
 async def test_auth_login_success(async_client):
-    payload = {"email": "arjun@famcare.in"}
+    payload = {"email": "arjun@famcare.in", "password": "any"}
     response = await async_client.post("/auth/login", json=payload)
     assert response.status_code == 200
     data = response.json()
@@ -12,7 +12,7 @@ async def test_auth_login_success(async_client):
     assert data["name"] == "Arjun Mehta"
 
 async def test_auth_login_fail(async_client):
-    payload = {"email": "nonexistent@famcare.in"}
+    payload = {"email": "nonexistent@famcare.in", "password": "any"}
     response = await async_client.post("/auth/login", json=payload)
     assert response.status_code == 404
 
