@@ -11,6 +11,8 @@ import 'screens/cart/cart_screen.dart';
 import 'screens/checkout/checkout_outcome_screen.dart';
 import 'screens/explore/explore_screen.dart';
 import 'screens/profile/profile_screen.dart';
+import 'screens/profile/personal_info_screen.dart';
+import 'screens/profile/security_privacy_screen.dart';
 import 'screens/auth/auth_screen.dart';
 import 'providers/session_provider.dart';
 
@@ -86,6 +88,14 @@ class FamCareApp extends ConsumerWidget {
         GoRoute(
           path: '/profile',
           builder: (context, state) => const ProfileScreen(),
+        ),
+        GoRoute(
+          path: '/profile/personal-info',
+          builder: (context, state) => const PersonalInfoScreen(),
+        ),
+        GoRoute(
+          path: '/profile/security-privacy',
+          builder: (context, state) => const SecurityPrivacyScreen(),
         ),
       ],
     );

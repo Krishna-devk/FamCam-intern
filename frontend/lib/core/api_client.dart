@@ -183,5 +183,55 @@ class ApiClient {
     }
   }
 
+  Future<UserEntity> updateUser(int userId, String name, String email) async {
+    try {
+      final response = await _dio.put(
+        '/auth/$userId',
+        data: {'name': name, 'email': email},
+      );
+      if (response.statusCode == 200) {
+        return UserEntity.fromJson(response.data);
+      }
+      throw NetworkException("Failed to update user");
+    } on DioException catch (e) {
+      if (e.response != null && e.response!.statusCode == 400) {
+        throw NetworkException("Email already in use.");
+      }
+      throw NetworkException(e.message ?? "Network error updating user");
+    }
+  }
+
+  Future<bool> changePassword(int userId, String currentPassword, String newPassword) async {
+    try {
+      final response = await _dio.put(
+        '/auth/$userId/password',
+        data: {
+          'current_password': currentPassword,
+          'new_password': newPassword,
+        },
+      );
+      if (response.statusCode == 200) {
+        return true;
+      }
+      throw NetworkException("Failed to change password");
+    } on DioException catch (e) {
+      if (e.response != null && e.response!.statusCode == 401) {
+        throw NetworkException("Incorrect current password.");
+      }
+      throw NetworkException(e.message ?? "Network error changing password");
+    }
+  }
+
+  Future<bool> deleteAccount(int userId) async {
+    try {
+      final response = await _dio.delete('/auth/$userId');
+      if (response.statusCode == 200) {
+        return true;
+      }
+      throw NetworkException("Failed to delete account");
+    } on DioException catch (e) {
+      throw NetworkException(e.message ?? "Network error deleting account");
+    }
+  }
 
 }

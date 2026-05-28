@@ -65,6 +65,16 @@ class SessionNotifier extends AsyncNotifier<UserEntity?> {
     }
   }
 
+  Future<void> updateSession(UserEntity updatedUser) async {
+    state = const AsyncValue.loading();
+    try {
+      await _saveSession(updatedUser);
+      state = AsyncValue.data(updatedUser);
+    } catch (err, stack) {
+      state = AsyncValue.error(err, stack);
+    }
+  }
+
   Future<void> _saveSession(UserEntity user) async {
     try {
       final prefs = await SharedPreferences.getInstance();

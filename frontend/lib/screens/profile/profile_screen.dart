@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/theme.dart';
 import '../../screens/home/home_screen.dart';
 import '../../providers/session_provider.dart';
@@ -88,43 +89,15 @@ class ProfileScreen extends ConsumerWidget {
 
 
 
-              // ── Personal Information & Insurance ────────────────────────
+              // ── Personal Information ────────────────────────────────────
               Text("Account Settings", style: Theme.of(context).textTheme.titleLarge),
               const SizedBox(height: 14),
               _buildSettingItem(
                 context: context,
                 icon: Icons.person_outline,
                 title: "Personal Information",
-                subtitle: "Edit name, email, phone number, address",
-                onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("Personal Information editing is under development")),
-                  );
-                },
-              ),
-              const SizedBox(height: 12),
-              _buildSettingItem(
-                context: context,
-                icon: Icons.health_and_safety_outlined,
-                title: "Insurance & Coverage",
-                subtitle: "View or update policy details",
-                onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("Insurance integration details is under development")),
-                  );
-                },
-              ),
-              const SizedBox(height: 12),
-              _buildSettingItem(
-                context: context,
-                icon: Icons.contact_emergency_outlined,
-                title: "Emergency Contacts",
-                subtitle: "Set contacts for instant notifications",
-                onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("Emergency contacts settings is under development")),
-                  );
-                },
+                subtitle: "View and edit your personal details",
+                onTap: () => context.push('/profile/personal-info'),
               ),
               const SizedBox(height: 28),
 
@@ -133,26 +106,10 @@ class ProfileScreen extends ConsumerWidget {
               const SizedBox(height: 14),
               _buildSettingItem(
                 context: context,
-                icon: Icons.notifications_none_outlined,
-                title: "Notification Settings",
-                subtitle: "Manage reminders, alert sounds & SMS alerts",
-                onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("Notification preferences is under development")),
-                  );
-                },
-              ),
-              const SizedBox(height: 12),
-              _buildSettingItem(
-                context: context,
                 icon: Icons.lock_outline,
                 title: "Security & Privacy",
                 subtitle: "Change password, biometric login settings",
-                onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("Security settings is under development")),
-                  );
-                },
+                onTap: () => context.push('/profile/security-privacy'),
               ),
               const SizedBox(height: 32),
 

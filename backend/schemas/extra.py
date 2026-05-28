@@ -29,3 +29,11 @@ class RegisterRequest(BaseModel):
     email: str = Field(..., max_length=255)
     role: Literal['PATIENT', 'CAREGIVER']
     password: str = Field(..., min_length=4)
+
+class UserUpdateRequest(BaseModel):
+    name: str = Field(..., max_length=100)
+    email: str = Field(..., max_length=255)
+
+class PasswordChangeRequest(BaseModel):
+    current_password: str
+    new_password: str = Field(..., min_length=4)
