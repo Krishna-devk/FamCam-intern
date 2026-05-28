@@ -174,3 +174,76 @@ async def test_fails_when_caregiver_not_found(async_client, db_session):
     data = response.json()
     assert data["status"] == "failed"
     assert data["reason_code"] == "CAREGIVER_NOT_FOUND"
+
+
+async def test_rejects_non_15min_aligned_start_time(async_client, db_session):
+    """
+    Start time 09:10 is not 15-min aligned.
+    Pydantic validator raises SLOT_NOT_15_MIN_ALIGNED before any DB write.
+    Confirm zero bookings exist after rejection.
+    """
+    payload = {
+        "patient_id": 1,
+        "items": [
+            {
+                "service_id": 1,
+                "caregiver_id": 3,
+                "date": "2025-08-15",
+                "start_time": "09:10"  # ← invalid: not :00/:15/:30/:45
+            }
+        ]
+    }
+
+    response = await async_client.post("/cart/checkout", json=payload)
+    # Pydantic returns 422 for field validator failures
+    assert response.status_code == 422
+
+    # Confirm zero bookings committed
+    from sqlalchemy import select
+    from models.booking import Booking
+    stmt = select(Booking)
+    bookings_res = await db_session.execute(stmt)
+    bookings = bookings_res.scalars().all()
+    assert len(bookings) == 0
+
+
+async def test_rejects_unqualified_caregiver(async_client, db_session):
+    """
+    Kavita (id=5) is qualified for Wound Dressing and Medication Review,
+    but NOT for Physiotherapy (service_id=1).
+    First item succeeds validation, second item fails with CAREGIVER_NOT_QUALIFIED.
+    Entire transaction must roll back — zero bookings in DB.
+    """
+    payload = {
+        "patient_id": 1,
+        "items": [
+            {
+                "service_id": 2,   # Wound Dressing — Kavita IS qualified
+                "caregiver_id": 5,
+                "date": "2025-08-15",
+                "start_time": "09:00"
+            },
+            {
+                "service_id": 1,   # Physiotherapy — Kavita is NOT qualified
+                "caregiver_id": 5,
+                "date": "2025-08-15",
+                "start_time": "11:00"
+            }
+        ]
+    }
+
+    response = await async_client.post("/cart/checkout", json=payload)
+    assert response.status_code == 400
+
+    data = response.json()
+    assert data["status"] == "failed"
+    assert data["failed_item_index"] == 1
+    assert data["reason_code"] == "CAREGIVER_NOT_QUALIFIED"
+
+    # Full rollback: even the first (valid) item must not be in DB
+    from sqlalchemy import select
+    from models.booking import Booking
+    stmt = select(Booking)
+    bookings_res = await db_session.execute(stmt)
+    bookings = bookings_res.scalars().all()
+    assert len(bookings) == 0, "Full rollback expected — zero bookings should exist"

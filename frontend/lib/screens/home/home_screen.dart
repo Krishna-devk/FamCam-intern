@@ -189,15 +189,19 @@ class HomeScreen extends ConsumerWidget {
                         children: List.generate(7, (index) {
                           final barHeight = 100 * heights[index];
                           final count = dailyCounts[index];
-                          return Tooltip(
-                            message: "$count ${count == 1 ? 'booking' : 'bookings'}",
-                            preferBelow: false,
-                            triggerMode: TooltipTriggerMode.tap,
-                            decoration: BoxDecoration(
-                              color: AppTheme.colorPrimary,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            textStyle: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                          return GestureDetector(
+                            onTap: () {
+                              ScaffoldMessenger.of(context).clearSnackBars();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text("$count ${count == 1 ? 'booking' : 'bookings'} on ${['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][index]}"),
+                                  duration: const Duration(seconds: 2),
+                                  behavior: SnackBarBehavior.floating,
+                                  backgroundColor: AppTheme.colorPrimary,
+                                ),
+                              );
+                            },
+                            behavior: HitTestBehavior.opaque,
                             child: Container(
                               width: 14,
                               height: barHeight,

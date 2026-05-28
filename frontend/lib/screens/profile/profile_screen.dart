@@ -121,7 +121,33 @@ class ProfileScreen extends ConsumerWidget {
                   side: const BorderSide(color: AppTheme.colorError),
                 ).buildElevated(
                   onPressed: () {
-                    ref.read(sessionProvider.notifier).logout();
+                    showDialog(
+                      context: context,
+                      builder: (context) {
+                        return AlertDialog(
+                          backgroundColor: AppTheme.colorSurface,
+                          title: const Text("Sign Out", style: TextStyle(color: AppTheme.colorError)),
+                          content: const Text(
+                            "Are you sure you want to sign out?",
+                            style: TextStyle(color: AppTheme.colorTextPrimary),
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: const Text("Cancel"),
+                            ),
+                            ElevatedButton(
+                              style: ElevatedButton.styleFrom(backgroundColor: AppTheme.colorError),
+                              onPressed: () {
+                                Navigator.pop(context);
+                                ref.read(sessionProvider.notifier).logout();
+                              },
+                              child: const Text("Sign Out"),
+                            ),
+                          ],
+                        );
+                      },
+                    );
                   },
                   child: const Text("Sign Out"),
                 ),
