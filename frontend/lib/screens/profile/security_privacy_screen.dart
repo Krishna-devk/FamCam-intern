@@ -15,6 +15,8 @@ class _SecurityPrivacyScreenState extends ConsumerState<SecurityPrivacyScreen> {
   final _currentPasswordController = TextEditingController();
   final _newPasswordController = TextEditingController();
   bool _isLoading = false;
+  bool _obscureCurrentPassword = true;
+  bool _obscureNewPassword = true;
 
   @override
   void dispose() {
@@ -26,6 +28,8 @@ class _SecurityPrivacyScreenState extends ConsumerState<SecurityPrivacyScreen> {
   void _showChangePasswordDialog() {
     _currentPasswordController.clear();
     _newPasswordController.clear();
+    _obscureCurrentPassword = true;
+    _obscureNewPassword = true;
     showDialog(
       context: context,
       builder: (context) {
@@ -35,26 +39,41 @@ class _SecurityPrivacyScreenState extends ConsumerState<SecurityPrivacyScreen> {
             title: const Text("Change Password", style: TextStyle(color: AppTheme.colorTextPrimary)),
             content: Column(
               mainAxisSize: MainAxisSize.min,
-              children: [
                 TextField(
                   controller: _currentPasswordController,
-                  obscureText: true,
+                  obscureText: _obscureCurrentPassword,
                   decoration: InputDecoration(
                     labelText: "Current Password",
                     filled: true,
                     fillColor: AppTheme.colorBg,
+                    suffixIcon: IconButton(
+                      icon: Icon(_obscureCurrentPassword ? Icons.visibility_off : Icons.visibility, color: AppTheme.colorTextMuted),
+                      onPressed: () {
+                        setDialogState(() {
+                          _obscureCurrentPassword = !_obscureCurrentPassword;
+                        });
+                      },
+                    ),
                   ),
                 ),
                 const SizedBox(height: 16),
                 TextField(
                   controller: _newPasswordController,
-                  obscureText: true,
+                  obscureText: _obscureNewPassword,
                   decoration: InputDecoration(
                     labelText: "New Password",
                     filled: true,
                     fillColor: AppTheme.colorBg,
+                    suffixIcon: IconButton(
+                      icon: Icon(_obscureNewPassword ? Icons.visibility_off : Icons.visibility, color: AppTheme.colorTextMuted),
+                      onPressed: () {
+                        setDialogState(() {
+                          _obscureNewPassword = !_obscureNewPassword;
+                        });
+                      },
+                    ),
                   ),
-                ),
+                )
               ],
             ),
             actions: [

@@ -180,11 +180,35 @@ class HomeScreen extends ConsumerWidget {
                         fontSize: 13,
                       ),
                     ),
-                    const SizedBox(height: 28),
                     SizedBox(
                       height: 100,
                       width: double.infinity,
-                      child: CustomPaint(painter: ChartPainter(heights: heights, dailyCounts: dailyCounts, activeIndex: now.weekday - 1)),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: List.generate(7, (index) {
+                          final barHeight = 100 * heights[index];
+                          final count = dailyCounts[index];
+                          return Tooltip(
+                            message: "$count ${count == 1 ? 'booking' : 'bookings'}",
+                            preferBelow: false,
+                            triggerMode: TooltipTriggerMode.tap,
+                            decoration: BoxDecoration(
+                              color: AppTheme.colorPrimary,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            textStyle: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                            child: Container(
+                              width: 14,
+                              height: barHeight,
+                              decoration: BoxDecoration(
+                                color: count > 0 ? Colors.white : Colors.white.withValues(alpha: 0.2),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                          );
+                        }),
+                      ),
                     ),
                     const SizedBox(height: 16),
                     // Day labels
@@ -707,54 +731,6 @@ class _BottomNav extends ConsumerWidget {
         ],
       ),
     );
-  }
-}
-
-// ── Chart Painter ─────────────────────────────────────────────────────────────
-
-class ChartPainter extends CustomPainter {
-  final List<double> heights;
-  final List<int> dailyCounts;
-  final int activeIndex;
-
-  ChartPainter({required this.heights, required this.dailyCounts, required this.activeIndex});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final dimPaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.2)
-      ..strokeWidth = 3
-      ..strokeCap = StrokeCap.round
-      ..style = PaintingStyle.fill;
-
-    final activePaint = Paint()
-      ..color = Colors.white
-      ..strokeWidth = 3
-      ..strokeCap = StrokeCap.round
-      ..style = PaintingStyle.fill;
-
-    const double barCount = 7;
-    const double barWidth = 14;
-    final double totalSpace = size.width - (barWidth * barCount);
-    final double space = totalSpace / (barCount - 1);
-
-    for (int i = 0; i < 7; i++) {
-      final double x = i * (barWidth + space);
-      final double barHeight = size.height * heights[i];
-      final double y = size.height - barHeight;
-
-      final rect = RRect.fromRectAndRadius(
-        Rect.fromLTWH(x, y, barWidth, barHeight),
-        const Radius.circular(8),
-      );
-
-      canvas.drawRRect(rect, dailyCounts[i] > 0 ? activePaint : dimPaint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant ChartPainter oldDelegate) {
-    return oldDelegate.activeIndex != activeIndex || oldDelegate.heights != heights || oldDelegate.dailyCounts != dailyCounts;
   }
 }
 

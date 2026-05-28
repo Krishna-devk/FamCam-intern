@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select
+from sqlalchemy import select, delete, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from database import get_db
 from models.user import User
+from models import Booking, FamilyMember, CaregiverService
 from schemas.extra import LoginRequest, UserResponse, RegisterRequest, UserUpdateRequest, PasswordChangeRequest
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
@@ -77,6 +78,11 @@ async def delete_user(user_id: int, db: AsyncSession = Depends(get_db)):
     user = result.scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=404, detail="User not found.")
+    
+    # Manually delete dependent records to avoid IntegrityError (Foreign Key violations)
+    await db.execute(delete(Booking).where(or_(Booking.patient_id == user_id, Booking.caregiver_id == user_id)))
+    await db.execute(delete(FamilyMember).where(FamilyMember.user_id == user_id))
+    await db.execute(delete(CaregiverService).where(CaregiverService.caregiver_id == user_id))
     
     await db.delete(user)
     await db.commit()
