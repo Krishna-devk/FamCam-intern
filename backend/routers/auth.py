@@ -37,6 +37,14 @@ async def register(payload: RegisterRequest, db: AsyncSession = Depends(get_db))
     db.add(new_user)
     await db.commit()
     await db.refresh(new_user)
+
+    if payload.role == "CAREGIVER":
+        from models import Service
+        services = (await db.execute(select(Service))).scalars().all()
+        for srv in services:
+            db.add(CaregiverService(caregiver_id=new_user.id, service_id=srv.id))
+        await db.commit()
+
     return new_user
 
 @router.put("/{user_id}", response_model=UserResponse)
