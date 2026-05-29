@@ -335,17 +335,25 @@ class _CartScreenState extends ConsumerState<CartScreen>
                         child: Row(
                           children: [
                             const Icon(Icons.calendar_today_outlined, size: 14, color: AppTheme.colorTextMuted),
-                            const SizedBox(width: 8),
-                            Text(
-                              DateFormat('EEEE, d MMM').format(item.date),
-                              style: const TextStyle(fontSize: 13, color: AppTheme.colorTextMuted, fontWeight: FontWeight.w500),
+                            const SizedBox(width: 6),
+                            Flexible(
+                              child: Text(
+                                DateFormat('E, d MMM').format(item.date),
+                                style: const TextStyle(fontSize: 13, color: AppTheme.colorTextMuted, fontWeight: FontWeight.w500),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
-                            const SizedBox(width: 12),
+                            const SizedBox(width: 10),
                             const Icon(Icons.access_time_outlined, size: 14, color: AppTheme.colorTextMuted),
                             const SizedBox(width: 6),
-                            Text(
-                              "${item.startTimeFormatted}  (${item.durationMinutes} min)",
-                              style: const TextStyle(fontSize: 13, color: AppTheme.colorTextMuted, fontWeight: FontWeight.w500),
+                            Flexible(
+                              child: Text(
+                                "${item.startTimeFormatted} (${item.durationMinutes}m)",
+                                style: const TextStyle(fontSize: 13, color: AppTheme.colorTextMuted, fontWeight: FontWeight.w500),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
                           ],
                         ),
