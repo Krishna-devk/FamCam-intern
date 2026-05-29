@@ -673,8 +673,10 @@ class _SlotPickerScreenState extends ConsumerState<SlotPickerScreen>
     );
   }
 
-  void _addToCart() {
-    if (_selectedSlotTime == null) return;
+  bool _isAdding = false;
+
+  void _addToCart() async {
+    if (_selectedSlotTime == null || _isAdding) return;
 
     final patientId = ref.read(selectedPatientIdProvider);
     final activeDateStr = DateFormat('yyyy-MM-dd').format(_selectedDate!);
@@ -711,62 +713,116 @@ class _SlotPickerScreenState extends ConsumerState<SlotPickerScreen>
       minute: int.parse(parts[1]),
     );
 
-    final cartItem = CartItem(
-      serviceId: widget.serviceId,
-      serviceName: widget.serviceName,
-      caregiverId: finalCaregiver.id,
-      caregiverName: finalCaregiver.name,
-      date: _selectedDate!,
-      startTime: startTOD,
-      durationMinutes: widget.durationMinutes,
-      priceCents: widget.priceCents,
-    );
-
-    ref.read(cartProvider.notifier).addItem(cartItem);
-
-    _addController.forward(from: 0);
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        backgroundColor: AppTheme.colorSuccess,
-        duration: const Duration(seconds: 2),
-        content: Row(
-          children: [
-            const Icon(Icons.check_circle_outline, color: Colors.white),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                "${widget.serviceName} added to cart!",
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
+    // 1. Check local cart for patient overlap
+    final cartItems = ref.read(cartProvider);
+    for (final existing in cartItems) {
+      if (existing.date.year == _selectedDate!.year &&
+          existing.date.month == _selectedDate!.month &&
+          existing.date.day == _selectedDate!.day) {
+        
+        final newStartMins = startTOD.hour * 60 + startTOD.minute;
+        final newEndMins = newStartMins + widget.durationMinutes;
+        
+        final exStartMins = existing.startTime.hour * 60 + existing.startTime.minute;
+        final exEndMins = exStartMins + existing.durationMinutes;
+        
+        if (newStartMins < exEndMins && newEndMins > exStartMins) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text("This overlaps with ${existing.serviceName} already in your cart."),
+              backgroundColor: AppTheme.colorError,
             ),
-            TextButton(
-              onPressed: () {
-                ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                context.push('/cart');
-              },
-              child: const Text("View Cart", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-            ),
-          ],
-        ),
-      ),
-    );
+          );
+          return;
+        }
+      }
+    }
 
-    if (widget.pendingServices != null && widget.pendingServices!.isNotEmpty) {
-      final nextService = widget.pendingServices!.first;
-      final remaining = widget.pendingServices!.sublist(1);
+    setState(() => _isAdding = true);
+
+    try {
+      // 2. Fetch fresh availability from backend to ensure slot wasn't booked by another patient concurrently
+      final client = ref.read(apiClientProvider);
+      final freshSlots = await client.getAvailableSlots(widget.serviceId, activeDateStr, patientId);
       
-      context.pushReplacement('/book/slots', extra: {
-        'serviceId': nextService.id,
-        'serviceName': nextService.name,
-        'durationMinutes': nextService.durationMinutes,
-        'priceCents': nextService.priceCents,
-        'dateStr': widget.dateStr,
-        'dateTime': widget.dateTime,
-        'pendingServices': remaining,
-      });
-    } else {
-      context.go('/cart');
+      if (!mounted) return;
+
+      final stillAvailable = freshSlots.any((s) => 
+        s.startTime == _selectedSlotTime && 
+        s.availableCaregivers.any((c) => c.id == finalCaregiver.id)
+      );
+
+      if (!stillAvailable) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("${finalCaregiver.name} is no longer available at this time. It may have just been booked."),
+            backgroundColor: AppTheme.colorError,
+          ),
+        );
+        // Refresh the UI with the latest slots
+        ref.invalidate(availableSlotsProvider(searchArgs));
+        return;
+      }
+
+      final cartItem = CartItem(
+        serviceId: widget.serviceId,
+        serviceName: widget.serviceName,
+        caregiverId: finalCaregiver.id,
+        caregiverName: finalCaregiver.name,
+        date: _selectedDate!,
+        startTime: startTOD,
+        durationMinutes: widget.durationMinutes,
+        priceCents: widget.priceCents,
+      );
+
+      ref.read(cartProvider.notifier).addItem(cartItem);
+
+      _addController.forward(from: 0);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: AppTheme.colorSuccess,
+          duration: const Duration(seconds: 2),
+          content: Row(
+            children: [
+              const Icon(Icons.check_circle_outline, color: Colors.white),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  "${widget.serviceName} added to cart!",
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+              TextButton(
+                onPressed: () {
+                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                  context.push('/cart');
+                },
+                child: const Text("View Cart", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              ),
+            ],
+          ),
+        ),
+      );
+
+      if (widget.pendingServices != null && widget.pendingServices!.isNotEmpty) {
+        final nextService = widget.pendingServices!.first;
+        final remaining = widget.pendingServices!.sublist(1);
+        
+        context.pushReplacement('/book/slots', extra: {
+          'serviceId': nextService.id,
+          'serviceName': nextService.name,
+          'durationMinutes': nextService.durationMinutes,
+          'priceCents': nextService.priceCents,
+          'dateStr': widget.dateStr,
+          'dateTime': widget.dateTime,
+          'pendingServices': remaining,
+        });
+      } else {
+        context.go('/cart');
+      }
+    } finally {
+      if (mounted) setState(() => _isAdding = false);
     }
   }
 

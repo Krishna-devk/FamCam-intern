@@ -302,13 +302,25 @@ class _CartScreenState extends ConsumerState<CartScreen>
                               ],
                             ),
                           ),
-                          Text(
-                            AppTheme.formatPrice(item.priceCents),
-                            style: TextStyle(
-                              color: isHighlighted ? AppTheme.colorError : AppTheme.colorPrimary,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 17,
-                            ),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.close, size: 20, color: AppTheme.colorTextMuted),
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
+                                onPressed: () => _removeItem(index),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                AppTheme.formatPrice(item.priceCents),
+                                style: TextStyle(
+                                  color: isHighlighted ? AppTheme.colorError : AppTheme.colorPrimary,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 17,
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
