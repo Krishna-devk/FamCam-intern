@@ -457,22 +457,46 @@ class _CartScreenState extends ConsumerState<CartScreen>
                 Text("Free", style: TextStyle(fontSize: 12, color: AppTheme.colorSuccess, fontWeight: FontWeight.w600)),
               ],
             ),
-            const SizedBox(height: 14),
-            SizedBox(
-              width: double.infinity,
-              height: 54,
-              child: ElevatedButton(
-                onPressed: isLoading
-                    ? null
-                    : () => ref.read(checkoutProvider.notifier).submit(patientId, _listItems),
-                child: isLoading
-                    ? const SizedBox(
-                        width: 22,
-                        height: 22,
-                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
-                      )
-                    : const Text("Confirm Booking"),
-              ),
+            Row(
+              children: [
+                Expanded(
+                  flex: 2,
+                  child: OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      padding: EdgeInsets.zero,
+                      side: const BorderSide(color: AppTheme.colorPrimary, width: 1.5),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      minimumSize: const Size.fromHeight(54),
+                    ),
+                    icon: const Icon(Icons.add_circle_outline, size: 18, color: AppTheme.colorPrimary),
+                    label: const Text(
+                      "Add More",
+                      style: TextStyle(color: AppTheme.colorPrimary, fontWeight: FontWeight.bold, fontSize: 14),
+                    ),
+                    onPressed: isLoading ? null : () => context.pushReplacement('/book/service'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  flex: 3,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      minimumSize: const Size.fromHeight(54),
+                    ),
+                    onPressed: isLoading
+                        ? null
+                        : () => ref.read(checkoutProvider.notifier).submit(patientId, _listItems),
+                    child: isLoading
+                        ? const SizedBox(
+                            width: 22,
+                            height: 22,
+                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
+                          )
+                        : const Text("Confirm Booking"),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
