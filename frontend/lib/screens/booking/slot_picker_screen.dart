@@ -639,14 +639,18 @@ class _SlotPickerScreenState extends ConsumerState<SlotPickerScreen>
                   const Spacer(),
                   const Icon(Icons.person_outline, size: 16, color: AppTheme.colorTextMuted),
                   const SizedBox(width: 6),
-                  Text(
-                    _selectedCaregiver != null 
-                        ? _selectedCaregiver!.name.split(' ').first 
-                        : 'Auto-Assign',
-                    style: TextStyle(
-                      fontSize: 13, 
-                      fontWeight: _selectedCaregiver == null ? FontWeight.w600 : FontWeight.normal,
-                      color: _selectedCaregiver == null ? AppTheme.colorSuccess : AppTheme.colorTextPrimary,
+                  Flexible(
+                    child: Text(
+                      _selectedCaregiver != null 
+                          ? _selectedCaregiver!.name.split(' ').first 
+                          : 'Auto-Assign',
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                      style: TextStyle(
+                        fontSize: 13, 
+                        fontWeight: _selectedCaregiver == null ? FontWeight.w600 : FontWeight.normal,
+                        color: _selectedCaregiver == null ? AppTheme.colorSuccess : AppTheme.colorTextPrimary,
+                      ),
                     ),
                   ),
                   const Spacer(),
