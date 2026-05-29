@@ -45,6 +45,13 @@ class BookingsNotifier extends AutoDisposeFamilyAsyncNotifier<List<BookingDetail
     }
   }
 
+  Future<void> _clearCache(int patientId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('cached_bookings_$patientId');
+    } catch (_) {}
+  }
+
   void _saveToCache(int patientId, List<BookingDetail> bookings) async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -55,17 +62,34 @@ class BookingsNotifier extends AutoDisposeFamilyAsyncNotifier<List<BookingDetail
 
   Future<void> cancelBooking(int bookingId) async {
     final client = ref.watch(apiClientProvider);
-    await client.cancelBooking(bookingId);
-    
-    // Explicit refresh
+
+    // Bug Fix 1: Immediately remove the cancelled booking from the UI
+    // so the user sees instant feedback without waiting for the network.
+    final currentList = state.value ?? [];
+    final optimisticList = currentList.where((b) => b.bookingId != bookingId).toList();
+    state = AsyncValue.data(optimisticList);
+
+    // Bug Fix 2: Clear the stale cache BEFORE fetching fresh data.
+    // Without this, the next app launch re-loads the old cancelled booking
+    // from SharedPreferences, making it appear to come back from the dead.
+    await _clearCache(arg);
+
+    // Now hit the backend API to actually cancel it.
+    try {
+      await client.cancelBooking(bookingId);
+    } catch (_) {
+      // If the API call fails, restore the original list so the UI is consistent.
+      state = AsyncValue.data(currentList);
+      rethrow;
+    }
+
+    // Finally, fetch fresh confirmed bookings from the server and save to cache.
     try {
       final fresh = await _fetchDirect(arg);
       state = AsyncValue.data(fresh);
     } catch (_) {
-      // Fallback: manually update locally
-      final list = state.value ?? [];
-      final freshLocal = list.where((b) => b.bookingId != bookingId).toList();
-      state = AsyncValue.data(freshLocal);
+      // Keep the optimistic state if the refresh network call fails.
+      // The cache is already cleared so next load will fetch fresh data.
     }
   }
 }

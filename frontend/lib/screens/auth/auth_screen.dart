@@ -176,6 +176,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                             ),
                             const SizedBox(height: 8),
                             TextFormField(
+                              key: const ValueKey('auth_name'),
                               style: const TextStyle(color: AppTheme.colorTextPrimary),
                               decoration: AppTheme.inputDecoration(
                                 hintText: "Enter your name",
@@ -195,6 +196,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                           ),
                           const SizedBox(height: 8),
                           TextFormField(
+                            key: const ValueKey('auth_email'),
                             keyboardType: TextInputType.emailAddress,
                             style: const TextStyle(color: AppTheme.colorTextPrimary),
                             decoration: AppTheme.inputDecoration(
@@ -220,6 +222,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                           ),
                           const SizedBox(height: 8),
                           TextFormField(
+                            key: const ValueKey('auth_password'),
                             obscureText: _obscurePassword,
                             style: const TextStyle(color: AppTheme.colorTextPrimary),
                             decoration: AppTheme.inputDecoration(

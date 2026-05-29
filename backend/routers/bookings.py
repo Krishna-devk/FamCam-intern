@@ -18,7 +18,7 @@ async def list_bookings(
 ):
     stmt = (
         select(Booking)
-        .where(Booking.patient_id == patient_id)
+        .where(Booking.patient_id == patient_id, Booking.status == "CONFIRMED")
         .options(selectinload(Booking.service), selectinload(Booking.caregiver))
         .order_by(Booking.booking_date.desc(), Booking.start_time.desc())
     )
